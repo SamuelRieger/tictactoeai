@@ -22,25 +22,33 @@ public class TickTackToe {
     
         while (true) {
             Scanner input = new Scanner(System.in);
-            System.out.println("Enter your placement (1-9):");
+            System.out.print("Enter your placement (1-9): ");
 
             int humanPosition = input.nextInt();
             board = addSymbolToBoard(board, 'X', humanPosition);
             boardState[humanPosition - 1] = true;
             boardFreeSpace--;
-
-            if (checkWin(board) == true) {
+            
+            if (checkWin(board) != 'f') {
+                printWin(board, checkWin(board));
                 break;
             }
 
-            int aiPosition = aiMove(board, boardState, boardFreeSpace);
+            if (boardFreeSpace == 0) {
+                printBoard(board);
+                System.out.println("It is a draw!");
+                break;
+            }
+
+            int aiPosition = minimax(board, boardState, boardFreeSpace, 0, true);
             board = addSymbolToBoard(board, 'O', aiPosition);
             boardState[aiPosition - 1] = true;
             boardFreeSpace--;
 
             printBoard(board);
 
-            if (checkWin(board) == true) {
+            if (checkWin(board) != 'f') {
+                printWin(board, checkWin(board));
                 break;
             }
         }
@@ -64,6 +72,86 @@ public class TickTackToe {
         return board;
     }
 
+    public static void printWin(char[][] board, char winner) {
+        printBoard(board);
+        System.out.println(winner + " Wins!");
+    }
+
+    public static int minimax(char[][] board, boolean[] boardState, int boardFreeSpace, int depth, boolean isMaximizer) {
+        char winner = checkWin(board);
+        if (winner != 'f') {
+            if (winner == 'O') { // AI
+                return 10 - depth;
+            }
+            else if (winner == 'X') { // Human
+                return -10 + depth;
+            }
+            else {
+                return 0;
+            }
+        }
+        int bestPosition = 1;
+        int[] freeSpaceIndexes;
+        freeSpaceIndexes = getFreeSpaceIndexes(boardState, boardFreeSpace);
+        if (isMaximizer) {
+            double maxEval = Double.NEGATIVE_INFINITY;
+            for (int i = 0; i < freeSpaceIndexes.length; i++) {
+                board = addSymbolToBoard(board, 'O', freeSpaceIndexes[i] + 1);
+                boardState[freeSpaceIndexes[i]] = true;
+                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, false);
+                board = removeSymbolFromBoard(board, freeSpaceIndexes[i] + 1);
+                boardState[freeSpaceIndexes[i]] = false;
+                if (eval > maxEval) {
+                    maxEval = eval;
+                    bestPosition = freeSpaceIndexes[i] + 1;
+                }
+            }
+            if (depth == 0) {
+                return bestPosition;
+            }
+            return (int) maxEval;
+        }
+        else {
+            double minEval = Double.POSITIVE_INFINITY;
+            for (int i = 0; i < freeSpaceIndexes.length; i++) {
+                board = addSymbolToBoard(board, 'X', freeSpaceIndexes[i] + 1);
+                boardState[freeSpaceIndexes[i]] = true;
+                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, true);
+                board = removeSymbolFromBoard(board, freeSpaceIndexes[i] + 1);
+                boardState[freeSpaceIndexes[i]] = false;
+                minEval = Math.min((double) eval, minEval);
+            }
+            return (int) minEval;
+        }
+    }
+
+    public static int randomAI(char[][] board, boolean[] boardState, int boardFreeSpace) {
+        int[] freeSpaceCells = getFreeSpaceIndexes(boardState, boardFreeSpace); 
+        int randomCellIndex = new Random().nextInt(freeSpaceCells.length);
+        return freeSpaceCells[randomCellIndex] + 1;
+
+    }
+
+    public static int[] getFreeSpaceIndexes(boolean[] boardState, int boardFreeSpace) {
+        int[] freeSpaceIndexes = new int[boardFreeSpace];
+        for (int i = 0; i < boardState.length; i++) {
+            if (boardState[i] == false) {
+                freeSpaceIndexes = arrayAppend(freeSpaceIndexes, i);
+            }
+        }
+        return freeSpaceIndexes;
+    }
+
+    public static int[] arrayAppend(int[] freeSpaceCells, int numToAdd) {
+        for (int i = 0; i < freeSpaceCells.length; i++) {
+            if (freeSpaceCells[i] == 0) {
+                freeSpaceCells[i] = numToAdd;
+                break;
+            }
+        }
+        return freeSpaceCells;
+    }
+
     public static char[][] addSymbolToBoard(char[][] board, char playerSymbol, int position) {
         int iBoardPosition = (int) Math.floor((position - 1) / 3);
         int jBoardPosition = (position - 1) % 3;
@@ -72,7 +160,15 @@ public class TickTackToe {
         return board;
     }
 
-    public static boolean checkWin(char[][] board) {
+    public static char[][] removeSymbolFromBoard(char[][] board, int position) {
+        int iBoardPosition = (int) Math.floor((position - 1) / 3);
+        int jBoardPosition = (position - 1) % 3;
+        board[iBoardPosition][jBoardPosition] = ' ';
+        
+        return board;
+    }
+
+    public static char checkWin(char[][] board) {
         // Check horizontal
         for (int i = 0; i < board.length; i++) {
             char startingSymbol = board[i][0];
@@ -87,8 +183,7 @@ public class TickTackToe {
                 }
             }
             if (win) {
-                printWin(board, startingSymbol);
-                return true;
+                return startingSymbol;
             }
         }
 
@@ -106,8 +201,7 @@ public class TickTackToe {
                 }
             }
             if (win) {
-                printWin(board, startingSymbol);
-                return true;
+                return startingSymbol;
             }
         }
 
@@ -121,8 +215,7 @@ public class TickTackToe {
                 }
             }
             if (win) {
-                printWin(board, startingSymbol);
-                return true;
+                return startingSymbol;
             }
         }
         // Check diagonal right to left
@@ -135,53 +228,15 @@ public class TickTackToe {
                 }
             }
             if (win) {
-                printWin(board, startingSymbol);
-                return true;
+                return startingSymbol;
             }
         }
 
-        return false;
-    }
-
-    public static void printWin(char[][] board, char winner) {
-        printBoard(board);
-        System.out.println(winner + " Wins!");
-    }
-
-    public static int aiMove(char[][] board, boolean[] boardState, int boardFreeSpace) {
-        int[] freeSpaceCells = new int[boardFreeSpace];
-        // Make free space cells array.
-        for (int i = 0; i < boardState.length; i++) {
-            if (boardState[i] == false) {
-                freeSpaceCells = arrayAppend(freeSpaceCells, i);
-            }
-        }
-
-
-        int randomCellIndex = new Random().nextInt(freeSpaceCells.length);
-        return freeSpaceCells[randomCellIndex] + 1;
-
-    }
-
-    public static int[] arrayAppend(int[] freeSpaceCells, int numToAdd) {
-        for (int i = 0; i < freeSpaceCells.length; i++) {
-            if (freeSpaceCells[i] == 0) {
-                freeSpaceCells[i] = numToAdd;
-                break;
-            }
-        }
-        return freeSpaceCells;
+        return 'f';
     }
 
     public static void printBoard(char[][] board) {
         // Generate formatted board.
-        // char[][] formattedBoard = {
-        //     {' ', '|', ' ', '|', ' '},
-        //     {'-', '+', ' ', '+', '-'},
-        //     {' ', '|', ' ', '|', ' '},
-        //     {'-', '+', ' ', '+', '-'},
-        //     {' ', '|', ' ', '|', ' '},
-        // };
         char[][] formattedBoard = {
             {' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
             {' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
