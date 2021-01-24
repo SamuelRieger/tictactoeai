@@ -11,17 +11,18 @@ public class TickTackToe {
         boolean[] boardState = new boolean[board.length * board.length];
         Arrays.fill(boardState, false);
         int boardFreeSpace = board.length * board.length;
+        Scanner input = new Scanner(System.in);
 
+        System.out.println("Select an oponent to play against...\n" + 
+                        "1 - Random ai.\n" +
+                        "2 - Minimax without pruning.\n" +
+                        "3 - Minimax with pruning.\n");
 
-        // To find board cell from user input 1 - 9.
-        // First subtract 1 from input.
-        // For i divide by three and floor the result.
-        // For j mod the input. 
+        int aiSelection = input.nextInt();
 
         printBoard(board);
     
         while (true) {
-            Scanner input = new Scanner(System.in);
             System.out.print("Enter your placement (1-9): ");
 
             int humanPosition = input.nextInt();
@@ -40,7 +41,7 @@ public class TickTackToe {
                 break;
             }
 
-            int aiPosition = minimax(board, boardState, boardFreeSpace, 0, true);
+            int aiPosition = aiSelection(aiSelection, board, boardState, boardFreeSpace);
             board = addSymbolToBoard(board, 'O', aiPosition);
             boardState[aiPosition - 1] = true;
             boardFreeSpace--;
@@ -65,7 +66,6 @@ public class TickTackToe {
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board.length; j++) {
                 board[i][j] = (char) cellCode;
-                System.out.println((char) cellCode);
                 cellCode++;
             }
         }
@@ -79,7 +79,7 @@ public class TickTackToe {
 
     public static int minimax(char[][] board, boolean[] boardState, int boardFreeSpace, int depth, boolean isMaximizer) {
         char winner = checkWin(board);
-        if (winner != 'f') {
+        if (winner != 'f' || boardFreeSpace == 0) {
             if (winner == 'O') { // AI
                 return 10 - depth;
             }
@@ -90,9 +90,8 @@ public class TickTackToe {
                 return 0;
             }
         }
-        int bestPosition = 1;
-        int[] freeSpaceIndexes;
-        freeSpaceIndexes = getFreeSpaceIndexes(boardState, boardFreeSpace);
+        int[] freeSpaceIndexes = getFreeSpaceIndexes(boardState, boardFreeSpace);
+        int bestPosition = freeSpaceIndexes[0] + 1;
         if (isMaximizer) {
             double maxEval = Double.NEGATIVE_INFINITY;
             for (int i = 0; i < freeSpaceIndexes.length; i++) {
@@ -152,6 +151,10 @@ public class TickTackToe {
         return freeSpaceCells;
     }
 
+    // To find board cell from user input 1 - 9.
+    // First subtract 1 from input.
+    // For i divide by three and floor the result.
+    // For j mod the input. 
     public static char[][] addSymbolToBoard(char[][] board, char playerSymbol, int position) {
         int iBoardPosition = (int) Math.floor((position - 1) / 3);
         int jBoardPosition = (position - 1) % 3;
@@ -163,7 +166,7 @@ public class TickTackToe {
     public static char[][] removeSymbolFromBoard(char[][] board, int position) {
         int iBoardPosition = (int) Math.floor((position - 1) / 3);
         int jBoardPosition = (position - 1) % 3;
-        board[iBoardPosition][jBoardPosition] = ' ';
+        board[iBoardPosition][jBoardPosition] = (char) (49 + position - 1);
         
         return board;
     }
@@ -235,6 +238,18 @@ public class TickTackToe {
         return 'f';
     }
 
+    public static int aiSelection(int aiSelection, char[][] board, boolean[] boardState, int boardFreeSpace) {
+        if (aiSelection == 1) {
+            return randomAI(board, boardState, boardFreeSpace);
+        } 
+        else if (aiSelection == 2) {
+            return minimax(board, boardState, boardFreeSpace, 0, true);
+        }
+        else {
+            return minimax(board, boardState, boardFreeSpace, 0, true);
+        }
+    }
+
     public static void printBoard(char[][] board) {
         // Generate formatted board.
         char[][] formattedBoard = {
@@ -252,6 +267,9 @@ public class TickTackToe {
         };
 
         // Insert data from board into formatted board.
+        // To find board cell from user input 1 - 9.
+        // For i the first row is 1 and the rest are determined by modding the result of i - 1 by 4.
+        // For j the first column is 3 and the rest are determined by modding the result of j - 3 by 8.
         int iBoardCell = 0;
         int jBoardCell = 0;
         for (int i = 0; i < formattedBoard.length; i++) {
