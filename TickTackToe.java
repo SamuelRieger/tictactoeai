@@ -4,6 +4,7 @@ import java.util.Random;
 
 public class TickTackToe {
 
+    private static int numberOfEndStatesSearched = 0;
 
     public static void main(String[] args) {
         // Create board and initialize it with space values.
@@ -13,10 +14,11 @@ public class TickTackToe {
         int boardFreeSpace = board.length * board.length;
         Scanner input = new Scanner(System.in);
 
-        System.out.println("Select an oponent to play against...\n" + 
+        System.out.println("\nOponents to play against...\n\n" + 
                         "1 - Random ai.\n" +
-                        "2 - Minimax without pruning.\n" +
-                        "3 - Minimax with pruning.\n");
+                        "2 - Minimax ai without optimization.\n" +
+                        "3 - Minimax ai with optimization.\n");
+        System.out.print("Select an oponent: ");
 
         int aiSelection = input.nextInt();
 
@@ -45,6 +47,9 @@ public class TickTackToe {
             board = addSymbolToBoard(board, 'O', aiPosition);
             boardState[aiPosition - 1] = true;
             boardFreeSpace--;
+
+            System.out.println(Integer.toString(numberOfEndStatesSearched) + " end states were searched.");
+            numberOfEndStatesSearched = 0;
 
             printBoard(board);
 
@@ -77,9 +82,10 @@ public class TickTackToe {
         System.out.println(winner + " Wins!");
     }
 
-    public static int minimax(char[][] board, boolean[] boardState, int boardFreeSpace, int depth, boolean isMaximizer) {
+    public static int minimax(char[][] board, boolean[] boardState, int boardFreeSpace, int depth, boolean isMaximizer, boolean pruning, int alpha, int beta) {
         char winner = checkWin(board);
         if (winner != 'f' || boardFreeSpace == 0) {
+            numberOfEndStatesSearched++;
             if (winner == 'O') { // AI
                 return 10 - depth;
             }
@@ -97,12 +103,16 @@ public class TickTackToe {
             for (int i = 0; i < freeSpaceIndexes.length; i++) {
                 board = addSymbolToBoard(board, 'O', freeSpaceIndexes[i] + 1);
                 boardState[freeSpaceIndexes[i]] = true;
-                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, false);
+                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, false, pruning, alpha, beta);
                 board = removeSymbolFromBoard(board, freeSpaceIndexes[i] + 1);
                 boardState[freeSpaceIndexes[i]] = false;
                 if (eval > maxEval) {
                     maxEval = eval;
                     bestPosition = freeSpaceIndexes[i] + 1;
+                }
+                alpha = Math.max(alpha, eval);
+                if (pruning && beta <= alpha) {
+                    break;
                 }
             }
             if (depth == 0) {
@@ -115,10 +125,14 @@ public class TickTackToe {
             for (int i = 0; i < freeSpaceIndexes.length; i++) {
                 board = addSymbolToBoard(board, 'X', freeSpaceIndexes[i] + 1);
                 boardState[freeSpaceIndexes[i]] = true;
-                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, true);
+                int eval = minimax(board, boardState, boardFreeSpace - 1, depth + 1, true, pruning, alpha, beta);
                 board = removeSymbolFromBoard(board, freeSpaceIndexes[i] + 1);
                 boardState[freeSpaceIndexes[i]] = false;
                 minEval = Math.min((double) eval, minEval);
+                beta = Math.min(eval, beta);
+                if (pruning && beta <= alpha) {
+                    break;
+                }
             }
             return (int) minEval;
         }
@@ -243,10 +257,10 @@ public class TickTackToe {
             return randomAI(board, boardState, boardFreeSpace);
         } 
         else if (aiSelection == 2) {
-            return minimax(board, boardState, boardFreeSpace, 0, true);
+            return minimax(board, boardState, boardFreeSpace, 0, true, false, 0, 0);
         }
         else {
-            return minimax(board, boardState, boardFreeSpace, 0, true);
+            return minimax(board, boardState, boardFreeSpace, 0, true, true, (int) Double.NEGATIVE_INFINITY, (int) Double.POSITIVE_INFINITY);
         }
     }
 
