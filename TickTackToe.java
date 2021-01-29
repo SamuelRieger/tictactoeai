@@ -39,7 +39,7 @@ public class TickTackToe {
 
             if (boardFreeSpace == 0) {
                 printBoard(board);
-                System.out.println("It is a draw!");
+                System.out.println("It is a draw!\n");
                 break;
             }
 
@@ -79,7 +79,7 @@ public class TickTackToe {
 
     public static void printWin(char[][] board, char winner) {
         printBoard(board);
-        System.out.println(winner + " Wins!");
+        System.out.println(winner + " Wins!\n");
     }
 
     public static int minimax(char[][] board, boolean[] boardState, int boardFreeSpace, int depth, boolean isMaximizer, boolean pruning, int alpha, int beta) {
